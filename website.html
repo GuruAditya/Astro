@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrbitX Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="starfield"></div>
+<div id="app">
+
+<header>
+  <div class="logo"><div class="logo-ring">✦</div>ORBITX</div>
+  <nav>
+    <button class="nb active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nb" onclick="showPage('missions')">Missions</button>
+    <button class="nb" onclick="showPage('crew')">Crew</button>
+    <button class="nb" onclick="showPage('comms')">Comms</button>
+    <button class="nb" onclick="showPage('trajectory')">Trajectory</button>
+    <button class="nb" onclick="showPage('terminal')">Terminal</button>
+    <button class="nb" onclick="showPage('compare')">Compare</button>
+  </nav>
+  <div class="hright">
+    <div class="livebadge"><div class="ldot"></div>LIVE</div>
+    <div id="sysclock">--:--:-- UTC</div>
+  </div>
+</header>
+
+<main>
+  <div class="ap" id="alert-panel">
+    <div class="sh" style="margin-bottom:9px">
+      <span class="st">⚠ Active Alerts</span><div class="sl"></div>
+      <button class="tbtn warn" style="padding:5px 10px;font-size:0.5rem" onclick="clearAlerts()">CLEAR ALL</button>
+    </div>
+    <div id="alert-list"></div>
+  </div>
+
+  <div class="page active" id="page-dashboard">
+    <div class="statbar">
+      <div class="sc" style="--ca:var(--green)"><div class="sc-label">Active Missions</div><div class="sc-val" style="color:var(--green)" id="s-active">4</div><div class="sc-sub">of 6 total</div></div>
+      <div class="sc" style="--ca:var(--cyan)"><div class="sc-label">Crew in Space</div><div class="sc-val" style="color:var(--cyan)" id="s-crew">18</div><div class="sc-sub">all missions</div></div>
+      <div class="sc" style="--ca:var(--yellow)"><div class="sc-label">Avg Fuel</div><div class="sc-val" style="color:var(--yellow)" id="s-fuel">74%</div><div class="sc-sub">fleet average</div></div>
+      <div class="sc" style="--ca:var(--red)"><div class="sc-label">Critical Alerts</div><div class="sc-val" style="color:var(--red)" id="s-crit">2</div><div class="sc-sub">require action</div></div>
+    </div>
+    <div class="sh"><span class="st">◈ Mission Cards</span><div class="sl"></div></div>
+    <div class="mgrid" id="mgrid-dash"></div>
+  </div>
+
+  <div class="page" id="page-missions">
+    <div class="sh"><span class="st">◈ All Missions</span><div class="sl"></div></div>
+    <div class="mgrid" id="mgrid-full"></div>
+  </div>
+
+  <div class="page" id="page-crew">
+    <div class="sh"><span class="st">◈ Crew Roster</span><div class="sl"></div></div>
+    <div class="cgrid" id="cgrid"></div>
+  </div>
+
+  <div class="page" id="page-comms">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+      <div class="clog">
+        <div class="clog-title"><span>◈ Communication Log</span><span style="color:var(--green);font-size:0.58rem">● OPEN</span></div>
+        <div class="cmsg-list" id="cmsg-list"></div>
+        <div style="display:flex;gap:7px;margin-top:10px">
+          <input class="cinput" id="cinput" placeholder="TRANSMIT MESSAGE…" onkeydown="if(event.key==='Enter')sendComm()">
+          <button class="csend" onclick="sendComm()">SEND</button>
+        </div>
+      </div>
+      <div><div class="sh" style="margin-bottom:10px"><span class="st">◈ Signal</span><div class="sl"></div></div><div id="sig-grid" style="display:flex;flex-direction:column;gap:8px"></div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-trajectory">
+    <div class="sh"><span class="st">◈ Trajectory & Checkpoints</span><div class="sl"></div></div>
+    <canvas id="traj-canvas" height="520"></canvas>
+  </div>
+
+  <div class="page" id="page-terminal">
+    <div class="sh"><span class="st">◈ Mission Terminal</span><div class="sl"></div></div>
+    <div class="toolbar">
+      <button class="tbtn" onclick="tc('status')">STATUS</button>
+      <button class="tbtn" onclick="tc('list missions')">LIST MISSIONS</button>
+      <button class="tbtn" onclick="tc('crew check')">CREW CHECK</button>
+      <button class="tbtn warn" onclick="tc('alert scan')">ALERT SCAN</button>
+      <button class="tbtn grn" onclick="tc('checkpoint status')">CHECKPOINTS</button>
+      <button class="tbtn" onclick="tc('fuel report')">FUEL REPORT</button>
+      <button class="tbtn warn" onclick="clearTerm()">CLEAR</button>
+    </div>
+    <div class="term" id="term"></div>
+    <div style="display:flex;gap:8px;margin-top:7px;align-items:center">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--cyan)">ORBITX:~$</span>
+      <input class="cinput" id="tinput" placeholder="enter command…" onkeydown="if(event.key==='Enter')tinputRun()" style="flex:1">
+    </div>
+  </div>
+
+  <div class="page" id="page-compare">
+    <div class="sh"><span class="st">◈ Multi-Mission Comparison</span><div class="sl"></div>
+      <button class="tbtn grn" style="padding:7px 14px" onclick="exportSummary()">↓ EXPORT</button>
+    </div>
+    <table class="ctable"><thead><tr>
+      <th>Mission</th><th>Type</th><th>Status</th><th>Crew</th>
+      <th>Fuel</th><th>O₂</th><th>Energy</th><th>Next Checkpoint</th><th>Days</th>
+    </tr></thead><tbody id="cmp-body"></tbody></table>
+  </div>
+</main>
+</div>
+
+<div class="dp" id="detail-panel">
+  <div class="dp-inner">
+    <div class="dp-hdr">
+      <div>
+        <div class="dp-title" id="dp-name">-</div>
+        <div class="dp-sub" id="dp-id">-</div>
+        <div style="margin-top:8px" id="dp-badge"></div>
+      </div>
+      <button class="cbtn" onclick="closeDetail()">✕ CLOSE</button>
+    </div>
+    <div style="display:flex;justify-content:space-around;margin-bottom:18px" id="dp-arcs"></div>
+    <div class="dps" style="margin-bottom:16px">
+      <div class="dpst">Route & Checkpoints</div>
+      <div id="dp-cpstrip" style="padding:6px 0"></div>
+    </div>
+    <div class="dp-grid">
+      <div class="dps"><div class="dpst">Specifications</div><div id="dp-specs"></div></div>
+      <div class="dps"><div class="dpst">Objectives</div><ul class="olist" id="dp-objs"></ul></div>
+    </div>
+    <div class="dps" style="margin-bottom:0">
+      <div class="dpst">Crew</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap" id="dp-crew"></div>
+    </div>
+  </div>
+</div>
+
+<div id="cp-notif">
+  <div class="cpn-title" id="cpn-title">⛽ CHECKPOINT REACHED</div>
+  <div id="cpn-mission"></div>
+  <div id="cpn-msg" style="margin-top:4px;color:#e9d5ff"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
